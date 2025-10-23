@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  imageUrl  String?
+  firstName String?
+  lastName  String?
+  clerkId   String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Projects owned by this user
+  ownedProjects Project[] @relation("ProjectOwner")
+
+  // Projects this user is a member of (including as owner)
+  projectMemberships ProjectMember[]
+
+  // User-specific settings for projects
+  projectSettings UserProjectSettings[]
+
+  // Tags created by this user
+  tags Tag[]
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  deletedAt   DateTime?
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  owner        User                  @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      ProjectMember[]
+  folders      Folder[]
+  documents    Document[]
+  userSettings UserProjectSettings[]
+  tags         ProjectTag[]
+
+  @@index([deletedAt, createdAt])
+  @@index([ownerId])
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(VIEWER)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A user can only be a member of a project once
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@index([projectId, role])
+}
+
+model UserProjectSettings {
+  id         String   @id @default(uuid())
+  userId     String
+  projectId  String
+  isArchived Boolean  @default(false)
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Each user can have only one settings record per project
+  @@unique([userId, projectId])
+  @@index([userId, isArchived])
+  @@index([userId, isFavorite])
+}
+
+model Folder {
+  id             String    @id @default(uuid())
+  name           String
+  projectId      String
+  parentFolderId String?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentFolder Folder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Restrict)
+  subFolders   Folder[]   @relation("SubFolders")
+  documents    Document[]
+
+  @@unique([projectId, name, parentFolderId, deletedAt])
+  @@index([projectId])
+  @@index([parentFolderId])
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  title       String
+  projectId   String
+  folderId    String?
+  latexConfig Json? // page size, margins, etc.
+  latexSource String? // final LaTeX code snapshot
+  pdfUrl      String? // optional cached PDF link
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder  Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  blocks  DocumentBlock[]
+
+  @@index([projectId])
+  @@index([folderId])
+  @@index([deletedAt])
+}
+
+model DocumentBlock {
+  id         String    @id @default(uuid())
+  documentId String
+  templateId String
+  type       BlockType
+  order      Int
+  name       String
+  data       Json
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, order])
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String
+  text      String
+  color     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects ProjectTag[]
+
+  @@unique([text, userId])
+  @@index([userId])
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum BlockType {
+  TEXT
+  TABLE
+  IMAGE
+  BOX
+  CUSTOM
+}
+
+enum ProjectRole {
+  VIEWER // Can only view
+  EDITOR // Can view and edit
+  ADMIN // Can view, edit, and manage members
+}
