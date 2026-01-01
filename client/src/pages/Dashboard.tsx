@@ -1,7 +1,3 @@
-// import CreateProjectDialog from "@/components/create-project";
-// import LastRecentFiles from "@/components/last-recent-files";
-// import ProjectsScrollable from "@/components/projects-scrollable";
-
 import CreateProjectDialog from "@/components/dashboard/CreateProjectDialog";
 import LastRecentFiles from "@/components/dashboard/LastRecentFiles";
 import ProjectsScrollable from "@/components/dashboard/ProjectScrollable";

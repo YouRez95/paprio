@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import { useParams } from "react-router";
 import { useGetProjectById } from "@/hooks/useProjects";
 import ProjectDetailsHeader from "@/components/projectDetails/ProjectDetailsHeader";
@@ -19,11 +18,18 @@ const ProjectDetailPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { projectId } = useParams();
 
-  const { data: projectData, isPending, error } = useGetProjectById(projectId);
+  const {
+    data: projectData,
+    isPending,
+    isError,
+    refetch,
+  } = useGetProjectById(projectId);
   const project = projectData?.project;
   const projectTree = projectData?.projectTree || [];
 
-  if (error) <ProjectDetailError />;
+  if (isError) {
+    return <ProjectDetailError onRetry={refetch} />;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden h-screen bg-gray-50">

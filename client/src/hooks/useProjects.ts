@@ -18,21 +18,45 @@ export const queryKeysProjects = {
 };
 
 export function showErrorToast(error: any, fallbackMessage?: string) {
-  let errorMessage = fallbackMessage || "Something went wrong";
+  // Extract backend message (keep it as-is)
+  let message =
+    error?.response?.data?.message ||
+    error?.message ||
+    fallbackMessage ||
+    "Something went wrong";
 
-  if (error instanceof Error) {
-    errorMessage = error.message;
-  } else if (typeof error === "string") {
-    errorMessage = error;
+  const status = error?.response?.status;
+
+  // Determine variant based on status (design only)
+  let bg = "#fff5f5"; // default light red
+  let border = "#ffcccc";
+  let text = "#b00020";
+
+  if (status === 409) {
+    bg = "#fffaf0";
+    border = "#ffe4b3";
+    text = "#b36b00";
+  } else if (status === 403) {
+    bg = "#fdf3f5";
+    border = "#f5c2cd";
+    text = "#8a2a36";
+  } else if (status === 500) {
+    bg = "#f4f4ff";
+    border = "#d6d6ff";
+    text = "#2a2a7f";
   }
 
   toast("Error", {
-    description: errorMessage,
+    description: message,
+    duration: 3500,
     style: {
-      backgroundColor: "#900",
-      color: "white",
-      border: "1px solid #f00",
-      fontWeight: "bold",
+      backgroundColor: bg,
+      color: text,
+      border: `1px solid ${border}`,
+      borderRadius: "12px",
+      padding: "14px 16px",
+      fontWeight: 500,
+      boxShadow: "0 2px 6px rgba(0,0,0,0.05), 0 4px 10px rgba(0,0,0,0.03)",
     },
   });
 }

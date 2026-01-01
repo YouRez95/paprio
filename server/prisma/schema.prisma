@@ -28,7 +28,8 @@ model User {
   projectSettings UserProjectSettings[]
 
   // Tags created by this user
-  tags Tag[]
+  tags            Tag[]
+  DocumentVersion DocumentVersion[]
 }
 
 model Project {
@@ -48,8 +49,8 @@ model Project {
   userSettings UserProjectSettings[]
   tags         ProjectTag[]
 
-  @@index([deletedAt, createdAt])
-  @@index([ownerId])
+  // @@index([deletedAt, createdAt])
+  // @@index([ownerId])
 }
 
 model ProjectMember {
@@ -63,11 +64,11 @@ model ProjectMember {
   // Relations
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // @@index([userId])
+  // @@index([projectId, role])
 
   // A user can only be a member of a project once
   @@unique([projectId, userId])
-  @@index([userId])
-  @@index([projectId, role])
 }
 
 model UserProjectSettings {
@@ -82,11 +83,11 @@ model UserProjectSettings {
   // Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // @@index([userId, isArchived])
+  // @@index([userId, isFavorite])
 
   // Each user can have only one settings record per project
   @@unique([userId, projectId])
-  @@index([userId, isArchived])
-  @@index([userId, isFavorite])
 }
 
 model Folder {
@@ -103,49 +104,100 @@ model Folder {
   parentFolder Folder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Restrict)
   subFolders   Folder[]   @relation("SubFolders")
   documents    Document[]
+  // @@index([projectId])
+  // @@index([parentFolderId])
 
   @@unique([projectId, name, parentFolderId, deletedAt])
-  @@index([projectId])
-  @@index([parentFolderId])
 }
 
 model Document {
-  id          String    @id @default(uuid())
-  title       String
-  projectId   String
-  folderId    String?
-  latexConfig Json? // page size, margins, etc.
-  latexSource String? // final LaTeX code snapshot
-  pdfUrl      String? // optional cached PDF link
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String            @id @default(uuid())
+  title             String
+  projectId         String
+  folderId          String?
+  latexConfig       Json? // page size, margins, etc.
+  latexSource       String? // final LaTeX code snapshot
+  latestVersion     Int               @default(0)
+  pdfR2Key          String?
+  lastCompiledAt    DateTime?
+  compilationStatus CompilationStatus @default(PENDING)
+  compilationError  String?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // Relations
-  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  folder  Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  blocks  DocumentBlock[]
+  project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder   Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  blocks   DocumentBlock[]
+  versions DocumentVersion[]
+  // @@index([projectId])
+  // @@index([folderId])
+  // @@index([deletedAt])
 
-  @@index([projectId])
-  @@index([folderId])
-  @@index([deletedAt])
+  @@unique([projectId, title, folderId, deletedAt])
+}
+
+model DocumentVersion {
+  id          String   @id @default(uuid())
+  documentId  String
+  title       String
+  latexConfig Json
+  latexSource String
+  version     Int
+  createdBy   String?
+  pdfR2Key    String?
+  createdAt   DateTime @default(now())
+  hash        String
+  note        String?
+  // Relations
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([documentId, version])
 }
 
 model DocumentBlock {
-  id         String    @id @default(uuid())
-  documentId String
-  templateId String
-  type       BlockType
-  order      Int
-  name       String
-  data       Json
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String   @id @default(uuid())
+  documentId  String
+  blockDefId  String
+  order       Int
+  name        String
+  config      Json // User's specific config: colors, dimensions, content, etc.
+  latexSource String? // cached compiled LaTeX for this block
+  packages    Json? // cached required packages for this block
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  blockDefinition BlockDefinition @relation(fields: [blockDefId], references: [id])
 
-  @@index([documentId, order])
+  // @@index([documentId, order])
+}
+
+model BlockDefinition {
+  id            String        @id @default(uuid())
+  name          String
+  description   String?
+  category      BlockCategory
+  type          BlockType
+  thumbnailUrl  String?
+  // LaTeX template with placeholders
+  latexTemplate String        @db.Text //ex: "\\begin{tcolorbox}[colback={{colback}}, ...]"
+
+  // Define configurable properties
+  variableRules    Json // Rules for dynamic variables based on config
+  configSchema     Json // JSON Schema defining all configurable properties
+  defaultConfig    Json // Default values for all properties
+  requiredPackages Json // Array of required packages // "requiredPackages": [{ "name": "tcolorbox", "options": ["most"] },{ "name": "xcolor", "options": [] }]
+
+  // Usage tracking
+  usageCount     Int             @default(0) // Track popularity
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  documentBlocks DocumentBlock[]
 }
 
 model Tag {
@@ -159,9 +211,9 @@ model Tag {
   // Relations
   user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   projects ProjectTag[]
+  // @@index([userId])
 
   @@unique([text, userId])
-  @@index([userId])
 }
 
 model ProjectTag {
@@ -182,16 +234,28 @@ enum Plan {
   PRO
 }
 
-enum BlockType {
-  TEXT
-  TABLE
-  IMAGE
-  BOX
-  CUSTOM
-}
-
 enum ProjectRole {
   VIEWER // Can only view
   EDITOR // Can view and edit
   ADMIN // Can view, edit, and manage members
+}
+
+enum CompilationStatus {
+  SUCCESS
+  ERROR
+  PENDING
+  FAILED
+}
+
+enum BlockCategory {
+  TCOLORBOX
+  SHADOWBOX
+}
+
+enum BlockType {
+  BOX
+  TABLE
+  FIGURE
+  TEXT
+  ALL
 }

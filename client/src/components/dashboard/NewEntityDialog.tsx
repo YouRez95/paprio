@@ -19,8 +19,6 @@ export const NewEntityDialog = ({ onClose, typeDialog }: NewEntityProps) => {
   const { data: projects, isPending } = useGetFiveProjects(debouncedSearchTerm);
   const [path, setPath] = useState<{ id: string; name: string }[]>([]);
 
-  console.log("project five", projects);
-
   const currentProject = projects?.find((p) => p.id === selectedProject) as
     | ProjectType
     | undefined;

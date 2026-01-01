@@ -17,7 +17,6 @@ type CreateFolderPartProps = {
 };
 
 export default function CreateFolderPart({
-  onClose,
   selectedProject,
   path,
   currentProject,
@@ -55,10 +54,10 @@ export default function CreateFolderPart({
     // Call API to create folder here
     createFolderMutation(payloadData, {
       onSuccess: () => {
-        onClose();
+        // onClose();
         setFolderName("");
-        setSelectedProject(null);
-        setPath([]);
+        // setSelectedProject(null);
+        // setPath([]);
       },
     });
   };

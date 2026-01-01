@@ -1,3 +1,4 @@
+import type { DocumentBlock } from "@/store/documentStore";
 import type {
   FolderType,
   Project,
@@ -159,3 +160,63 @@ export const checkFileExists = (
 
   return findInTree(nodes);
 };
+
+export function extractDefaultValues(
+  config: Record<string, any>
+): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  for (const key in config) {
+    if (config[key]?.default !== undefined) {
+      result[key] = config[key].default;
+    }
+  }
+
+  return result;
+}
+
+export const generateUniqueName = (
+  baseName: string,
+  blocks: DocumentBlock[],
+  currentId: string
+): string => {
+  let counter = 1;
+  let newName = `${baseName} (${counter})`;
+
+  while (
+    blocks.some((block) => block.id !== currentId && block.name === newName)
+  ) {
+    counter++;
+    newName = `${baseName} (${counter})`;
+  }
+
+  return newName;
+};
+
+/**
+ * Format a date to a short, readable format
+ */
+export function formatShortDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+}
+
+/**
+ * Format a date to a full, readable format
+ */
+export function formatFullDate(dateString: string): string {
+  const date = new Date(dateString);
+
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}

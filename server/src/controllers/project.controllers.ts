@@ -9,7 +9,6 @@ import {
   getFiveProject,
   getProjectById,
 } from "../services/project.services";
-import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 
 export const createProjectHandler = catchErrors(async (req, res) => {
@@ -56,7 +55,6 @@ export const getFiveProjectsHandler = catchErrors(async (req, res) => {
 
   const { nestedProjects } = await getFiveProject(searchTerm, userId);
 
-  console.log("nestedProjects", nestedProjects);
   return res.status(OK).json({
     status: "success",
     message: "Five projects retrieved successfully",

@@ -12,6 +12,8 @@ import Projects from "./pages/AllProjects";
 import ProjectDetailPage from "./pages/ProjectDetails";
 import { SignInWrapper } from "./components/auth/SignInWrapper";
 import { SignUpWrapper } from "./components/auth/SignUpWrapper";
+import BuilderPage from "./pages/BuilderPage";
+import { ToastProvider } from "./providers/ToastProvider";
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -94,7 +96,7 @@ const router = createBrowserRouter([
           },
           {
             path: ":projectId/file/:fileId",
-            element: <div>Builder page</div>,
+            element: <BuilderPage />,
           },
         ],
       },
@@ -110,6 +112,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
       <RouterProvider router={router} />
+      <ToastProvider />
     </ClerkProvider>
   </StrictMode>
 );
