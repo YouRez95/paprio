@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sidebar";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { Outlet } from "react-router";
-import { Toaster } from "@/components/ui/sonner";
+
 // import BreadCrumb from "@/components/bread-crumb";
 // import { registerLicense } from "@syncfusion/ej2-base";
 
@@ -36,7 +36,6 @@ export default function PrivateLayout() {
           </div>
         </SidebarInset>
       </SidebarProvider>
-      <Toaster />
     </QueryProvider>
   );
 }

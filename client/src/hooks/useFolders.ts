@@ -20,7 +20,14 @@ export const useCreateFolder = () => {
     onSuccess: (_, variables) => {
       const { projectId } = variables;
       toast.success("folder created successfully");
-
+      queryClient.invalidateQueries({
+        queryKey: queryKeysProjects.prjects({
+          limit: 5,
+          page: 1,
+          search: "",
+          tag: "",
+        }),
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeysProjects.singleProject(projectId),
       });

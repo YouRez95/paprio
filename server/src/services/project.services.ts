@@ -183,6 +183,12 @@ export const getFiveProject = async (searchTerm: string, userId: string) => {
         contains: searchTerm,
         mode: "insensitive",
       },
+      deletedAt: null,
+      members: {
+        some: {
+          userId,
+        },
+      },
     },
     select: {
       id: true,
@@ -193,12 +199,18 @@ export const getFiveProject = async (searchTerm: string, userId: string) => {
           name: true,
           parentFolderId: true,
         },
+        where: {
+          deletedAt: null,
+        },
       },
       documents: {
         select: {
           id: true,
           title: true,
           folderId: true,
+        },
+        where: {
+          deletedAt: null,
         },
       },
     },

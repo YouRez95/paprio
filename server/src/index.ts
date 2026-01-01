@@ -4,12 +4,18 @@ import cors from "cors";
 import { APP_ORIGIN, ENV, PORT } from "./constants/env";
 import authRoutes from "./routes/auth.routes";
 import tagRoutes from "./routes/tag.routes";
-import { fetchUserMiddleware } from "./middleware/fetchUserMiddelware";
-import { clerkMiddleware, requireAuth } from "@clerk/express";
+import {
+  fetchUserMiddleware,
+  fetchUserMiddlewareForPdf,
+} from "./middleware/fetchUserMiddelware";
+import { clerkMiddleware } from "@clerk/express";
 import projectRoutes from "./routes/project.routes";
 import errorHandler from "./middleware/errorHandler";
 import folderRoutes from "./routes/folder.routes";
 import documentRoutes from "./routes/document.routes";
+import blockRoutes from "./routes/block.routes";
+import pdfRoutes from "./routes/pdfs.route";
+import path from "path";
 
 const app = express();
 
@@ -18,6 +24,7 @@ app.use(cors({ origin: APP_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(clerkMiddleware());
+app.use("/api/v1/pdfs", express.static(path.join(__dirname, "../public/pdfs")));
 
 // Health Check Endpoint
 app.get("/api/v1/health", (req, res) => {
@@ -39,6 +46,12 @@ app.use("/api/v1/folders", fetchUserMiddleware, folderRoutes);
 
 // Documents Routes
 app.use("/api/v1/documents", fetchUserMiddleware, documentRoutes);
+
+// PDF Routes
+app.use("/api/v1/pdfs", pdfRoutes);
+
+// Blocks Routes
+app.use("/api/v1/blocks", fetchUserMiddleware, blockRoutes);
 
 app.use(errorHandler);
 
