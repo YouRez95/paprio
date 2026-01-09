@@ -174,7 +174,7 @@ export default function FileEditor() {
         blockDefiniton: block.blockDefinition,
       }));
 
-      console.log(existingBlocks);
+      // console.log(existingBlocks);
 
       // Remove duplicates by blockDefId, keeping the most recent one (highest order)
       const uniqueBlocks = existingBlocks.reduce((acc, block) => {

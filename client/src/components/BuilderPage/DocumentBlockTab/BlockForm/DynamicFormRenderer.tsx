@@ -49,7 +49,6 @@ export default function DynamicFormRenderer({
     if (!schema.properties) return [];
 
     const propertyEntries = Object.entries(schema.properties);
-
     // If ui:order is specified, use it to order the fields
     if (schema["ui:order"] && Array.isArray(schema["ui:order"])) {
       const orderedFields: formField[] = [];

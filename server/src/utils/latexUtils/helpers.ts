@@ -160,6 +160,7 @@ export function compileBlockLatex(
     definition.variableRules &&
     typeof definition.variableRules === "object"
   ) {
+    console.log("definiton variable rules", definition.variableRules);
     for (const [varName, ruleAny] of Object.entries(definition.variableRules)) {
       const rule: any = ruleAny || {};
       const fields: any[] = Array.isArray(rule.fields) ? rule.fields : [];
@@ -167,6 +168,7 @@ export function compileBlockLatex(
 
       const parts: string[] = [];
 
+      console.log("fields", fields);
       for (const field of fields) {
         // If the field is a plain literal (no key), push its value if present
         if (field && field.key === undefined && field.value !== undefined) {
@@ -305,6 +307,7 @@ export function generateLatexDocument(
   return `
 ${pageConfig}
 ${packages}
+\\usepackage{multicol}
 \\begin{document}
 ${content}
 \\end{document}

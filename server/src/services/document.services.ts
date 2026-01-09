@@ -22,6 +22,7 @@ import { generateSignedPdfUrl, uploadPdfToR2 } from "../config/r2";
 import crypto from "crypto";
 import { DEFAULT_PDF_URL, PDF_SECRET } from "../constants/env";
 import { sha256 } from "../utils/createHash";
+import { convertEditorFieldsInConfig } from "../utils/latexUtils/editorToLatex";
 // import { sha256 } from "crypto";
 
 export const createDocument = async (
@@ -289,6 +290,7 @@ export const compileDocument = async ({
   documentId,
   userId,
 }: CompileDocumentParams) => {
+  // console.info("blocks content", blocks.updated[0].config.content);
   // STEP 1: Validation
   const document = await db.document.findUnique({
     where: { id: documentId, deletedAt: null },
@@ -332,7 +334,7 @@ export const compileDocument = async ({
       });
 
       //c. Reassign order
-      console.log("Remaining blocks:", remainingBlocks);
+      // console.log("Remaining blocks:", remainingBlocks);
       const updates = remainingBlocks.map((block, index) =>
         tx.documentBlock.update({
           where: { id: block.id },
@@ -356,7 +358,7 @@ export const compileDocument = async ({
       ...new Set(changedBlocks.map((block) => block.blockDefId)),
     ];
 
-    console.log("uniqueBlockDefIds", uniqueBlockDefIds);
+    // console.log("uniqueBlockDefIds", uniqueBlockDefIds);
 
     const blockDefinitions = await db.blockDefinition.findMany({
       where: { id: { in: uniqueBlockDefIds } },
@@ -373,7 +375,7 @@ export const compileDocument = async ({
       blockDefinitions.map((def) => [def.id, def])
     );
 
-    console.log("definitionsMap", definitionsMap);
+    // console.log("definitionsMap", definitionsMap);
 
     // Compile each changed block
     await Promise.all(
@@ -391,19 +393,32 @@ export const compileDocument = async ({
           !Array.isArray(block.config)
             ? { ...(block.config as Record<string, any>) }
             : {};
-        extractColorsFromConfig(processedConfig, colorDefinitions);
+
+        const configWithLatex = convertEditorFieldsInConfig(
+          processedConfig,
+          definition.configSchema
+        );
+        // console.log(
+        //   "config with latex from convertEditorFieldsInConfig",
+        //   configWithLatex
+        // );
+        extractColorsFromConfig(configWithLatex, colorDefinitions);
 
         // Replace hex values with color names
-        Object.entries(processedConfig).forEach(([key, value]) => {
+        Object.entries(configWithLatex).forEach(([key, value]) => {
           if (typeof value === "string" && value.match(/^#[0-9A-Fa-f]{6}$/)) {
-            processedConfig[key] = colorDefinitions.get(value)!;
+            configWithLatex[key] = colorDefinitions.get(value)!;
           }
         });
 
         // Compile the LaTeX
-        const latexSource = compileBlockLatex(definition, processedConfig);
+        const latexSource = compileBlockLatex(definition, configWithLatex);
+        // console.log(
+        //   "latex Source from function compileBlockLatex",
+        //   latexSource
+        // );
 
-        console.log("Compiled LaTeX for block", block.id, ":", latexSource);
+        // console.log("Compiled LaTeX for block", block.id, ":", latexSource);
         await db.documentBlock.upsert({
           where: { id: block.id },
           create: {
@@ -442,7 +457,7 @@ export const compileDocument = async ({
     },
   });
 
-  console.log("All blocks fetched:", allBlocks.length);
+  // console.log("All blocks fetched:", allBlocks.length);
   let fullLatex: string;
   if (allBlocks.length === 0) {
     fullLatex = generateEmptyDocumentLatex();
@@ -470,7 +485,7 @@ export const compileDocument = async ({
     fullLatex = generateLatexDocument(content, pageConfig, packages);
   }
 
-  console.log("fullLatex before compile", fullLatex);
+  // console.log("fullLatex before compile", fullLatex);
   // STEP 9: Compile to PDF
   const pdfBuffer = await compileLatexToPdf(fullLatex);
 
